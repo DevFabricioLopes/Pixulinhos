@@ -22,7 +22,9 @@ export const Footer: React.FC<FooterProps> = ({ settings, onSelectCategory }) =>
           
           {/* Brand Info */}
           <div className="md:col-span-5 space-y-4">
-            <PixulinhosLogo size="md" showSubtitle={true} showHanger={true} />
+            <div className="inline-block p-4 sm:p-5 bg-white rounded-2xl shadow-md border border-pink-100/50">
+              <PixulinhosLogo size="md" showSubtitle={true} showHanger={true} />
+            </div>
             <p className="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-sm mx-auto md:mx-0">
               Vestimos os momentos mais doces do seu bebê com roupas em 100% Algodão, bordados delicados e o carinho que sua família merece.
             </p>
