@@ -1,0 +1,6 @@
+{
+  "name": "Pixulinhos - Roupas que Vestem Carinho",
+  "description": "Landing Page Premium, Catálogo Inteligente estilo Netflix e Painel Administrativo CMS para a marca infantil Pixulinhos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
