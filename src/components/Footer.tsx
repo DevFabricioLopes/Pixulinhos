@@ -37,25 +37,6 @@ export const Footer: React.FC<FooterProps> = ({ settings, onSelectCategory }) =>
               >
                 <Instagram className="w-4 h-4" />
               </a>
-              <a
-                href={`https://wa.me/${settings.whatsappNumber}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2.5 rounded-full bg-[#25D366] text-white hover:bg-[#20ba59] transition-colors"
-                aria-label="WhatsApp"
-              >
-                <MessageCircle className="w-4 h-4 fill-white" />
-              </a>
-              <a
-                href="https://github.com/DevFabricioLopes"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2.5 rounded-full bg-white/10 hover:bg-[#FF3B7A] text-white transition-colors"
-                aria-label="GitHub - DevFabricioLopes"
-                title="GitHub - DevFabricioLopes"
-              >
-                <Github className="w-4 h-4" />
-              </a>
             </div>
           </div>
 

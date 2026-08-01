@@ -15,6 +15,7 @@ import { Footer } from './components/Footer';
 import { ProductModal } from './components/ProductModal';
 import { WishlistDrawer } from './components/WishlistDrawer';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 
 import { Product, Category, Banner, InspirePost, LookBundle, Review, FAQ, SiteSettings, HomeSection } from './types';
 import { cmsStore } from './services/cmsStore';
@@ -242,6 +243,8 @@ export default function App() {
         />
       )}
 
+      {/* Floating WhatsApp Button */}
+      <FloatingWhatsApp whatsappNumber={settings.whatsappNumber} />
     </div>
   );
 }
