@@ -1347,6 +1347,18 @@ export const INITIAL_REVIEWS: Review[] = [
     verifiedPurchase: true,
     date: 'Há 1 semana',
     isActive: true
+  },
+  {
+    id: 'rev-3',
+    authorName: 'Stella Lopes',
+    babyInfo: 'Mãe do bebê',
+    rating: 5,
+    comment: 'Os bodys de algodão são os melhores que já compramos até hoje. O gola americana facilita demais na hora de vestir sem machucar as orelhinhas. E o atendimento pelo WhatsApp foi sensacional e carinhoso!',
+    photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    productName: 'Saída Maternidade',
+    verifiedPurchase: true,
+    date: 'Há 2 dias',
+    isActive: true
   }
 ];
 
