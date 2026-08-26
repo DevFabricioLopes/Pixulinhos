@@ -42,13 +42,13 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-[#FFFDF9]/95 backdrop-blur-md border-b border-pink-100 shadow-sm transition-all">
       {/* Top Announcement Bar */}
-      <div className="bg-gradient-to-r from-[#FF3B7A] via-[#7C4DFF] to-[#00BFA5] text-white py-2 px-4 text-center text-xs sm:text-sm font-medium tracking-wide shadow-inner flex items-center justify-center gap-2">
-        <Sparkles className="w-4 h-4 animate-spin text-amber-200 hidden sm:inline" />
+      <div className="bg-gradient-to-r from-[#FF3B7A] via-[#7C4DFF] to-[#00BFA5] text-white py-1 px-4 text-center text-xs font-medium tracking-wide shadow-inner flex items-center justify-center gap-2">
+        <Sparkles className="w-3.5 h-3.5 animate-spin text-amber-200 hidden sm:inline" />
         <span>{settings.topAnnouncement}</span>
       </div>
 
       {/* Main Header Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 sm:py-2">
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           {/* Logo */}
           <div 
@@ -66,13 +66,13 @@ export const Header: React.FC<HeaderProps> = ({
                 placeholder="O que seu bebê precisa hoje? ex: body, saída maternidade, macacão..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-white border-2 border-pink-100 focus:border-[#FF3B7A] rounded-full text-sm text-[#231F40] placeholder-gray-400 focus:outline-none transition-all shadow-sm"
+                className="w-full pl-9 pr-9 py-1.5 bg-white border-2 border-pink-100 focus:border-[#FF3B7A] rounded-full text-xs sm:text-sm text-[#231F40] placeholder-gray-400 focus:outline-none transition-all shadow-sm"
               />
-              <Search className="w-4 h-4 text-[#FF3B7A] absolute left-3.5 top-3" />
+              <Search className="w-4 h-4 text-[#FF3B7A] absolute left-3 top-2" />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1.5 text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -108,10 +108,10 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Mobile Search Toggle */}
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="md:hidden p-2 rounded-full bg-pink-50 text-[#FF3B7A] hover:bg-pink-100 transition-colors"
+              className="md:hidden p-1.5 rounded-full bg-pink-50 text-[#FF3B7A] hover:bg-pink-100 transition-colors"
               aria-label="Buscar"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4" />
             </button>
 
             {/* WhatsApp Quick Link Header Button */}
@@ -119,21 +119,21 @@ export const Header: React.FC<HeaderProps> = ({
               href={`https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent('Olá! Gostaria de tirar uma dúvida sobre as roupas da Pixulinhos.')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#25D366] text-white text-xs font-bold hover:bg-[#20ba59] transition-all transform hover:scale-105 shadow-sm shadow-green-200"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#25D366] text-white text-xs font-bold hover:bg-[#20ba59] transition-all transform hover:scale-105 shadow-sm shadow-green-200"
             >
-              <MessageCircle className="w-4 h-4 fill-white" />
+              <MessageCircle className="w-3.5 h-3.5 fill-white" />
               <span>WhatsApp</span>
             </a>
 
             {/* Sacola de Desejos / Wishlist */}
             <button
               onClick={onOpenWishlist}
-              className="relative p-2.5 rounded-full bg-pink-50 text-[#FF3B7A] hover:bg-pink-100 transition-colors flex items-center justify-center"
+              className="relative p-2 rounded-full bg-pink-50 text-[#FF3B7A] hover:bg-pink-100 transition-colors flex items-center justify-center"
               title="Sua Sacola de Desejos"
             >
-              <Heart className="w-5 h-5 fill-pink-100" />
+              <Heart className="w-4 h-4 fill-pink-100" />
               {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#FF3B7A] text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-bounce">
+                <span className="absolute -top-1 -right-1 bg-[#FF3B7A] text-white text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white animate-bounce">
                   {wishlistCount}
                 </span>
               )}
@@ -142,14 +142,14 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Admin Toggle Button */}
             <button
               onClick={onOpenAdmin}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold transition-all ${
                 isAdminActive
                   ? 'bg-[#7C4DFF] text-white shadow-md'
                   : 'bg-purple-50 text-[#7C4DFF] hover:bg-purple-100'
               }`}
               title="Painel Administrativo CMS"
             >
-              <Settings className="w-4 h-4 animate-spin-slow" />
+              <Settings className="w-3.5 h-3.5 animate-spin-slow" />
               <span className="hidden lg:inline">{isAdminActive ? 'Sair do CMS' : 'Painel Admin'}</span>
             </button>
           </div>
@@ -157,18 +157,18 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Expanded Search Bar */}
         {isSearchOpen && (
-          <div className="mt-3 md:hidden relative">
+          <div className="mt-2 md:hidden relative">
             <input
               type="text"
               placeholder="Buscar roupinhas fofas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 bg-white border-2 border-pink-200 rounded-full text-sm text-[#231F40] focus:outline-none focus:border-[#FF3B7A]"
+              className="w-full pl-9 pr-9 py-1.5 bg-white border-2 border-pink-200 rounded-full text-xs text-[#231F40] focus:outline-none focus:border-[#FF3B7A]"
               autoFocus
             />
-            <Search className="w-4 h-4 text-[#FF3B7A] absolute left-3.5 top-3.5" />
+            <Search className="w-4 h-4 text-[#FF3B7A] absolute left-3 top-2" />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-3 text-gray-400">
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2 text-gray-400">
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -198,10 +198,10 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* Category Navigation Pills */}
-        <div className="mt-3 flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+        <div className="mt-1.5 flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
           <button
             onClick={() => onSelectCategory(null)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+            className={`px-3.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
               activeCategory === null
                 ? 'bg-[#FF3B7A] text-white shadow-md shadow-pink-200 scale-105'
                 : 'bg-white border border-pink-100 text-[#231F40] hover:bg-pink-50'
@@ -216,7 +216,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.slug)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                className={`px-3.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-[#FF3B7A] text-white shadow-md shadow-pink-200 scale-105'
                     : 'bg-white border border-pink-100 text-[#231F40] hover:bg-pink-50 hover:text-[#FF3B7A]'
