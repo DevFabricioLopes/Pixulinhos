@@ -299,4 +299,4 @@ Pixulinhos — E-commerce infantil
 
 ---
 
-> Este README documenta a arquitetura e o fluxo técnico atual do projeto. Mantenha-o atualizado sempre que houver mudanças relevantes na infraestrutura, stack, segurança ou processo de deploy.
+
