@@ -1,576 +1,160 @@
 import {
-  Category,
-  Product,
-  Banner,
-  InspirePost,
-  LookBundle,
-  Review,
-  FAQ,
-  HomeSection,
-  SiteSettings,
-  MediaItem,
-  Order,
-  CMSStats
+  Category, Product, Banner, InspirePost, LookBundle, Review, FAQ,
+  HomeSection, SiteSettings, MediaItem, Order, CMSStats
 } from '../types';
 import {
-  INITIAL_CATEGORIES,
-  INITIAL_PRODUCTS,
-  INITIAL_BANNERS,
-  INITIAL_INSPIRE_POSTS,
-  INITIAL_LOOK_BUNDLES,
-  INITIAL_REVIEWS,
-  INITIAL_FAQS,
-  INITIAL_HOME_SECTIONS,
-  INITIAL_MEDIA,
-  INITIAL_SITE_SETTINGS
+  INITIAL_CATEGORIES, INITIAL_PRODUCTS, INITIAL_BANNERS, INITIAL_INSPIRE_POSTS,
+  INITIAL_LOOK_BUNDLES, INITIAL_REVIEWS, INITIAL_FAQS, INITIAL_HOME_SECTIONS,
+  INITIAL_MEDIA, INITIAL_SITE_SETTINGS
 } from '../data/initialData';
 import { getSupabase } from '../lib/supabase';
 
 const KEYS = {
-  PRODUCTS: 'pixulinhos_products',
-  CATEGORIES: 'pixulinhos_categories',
-  BANNERS: 'pixulinhos_banners',
-  INSPIRE: 'pixulinhos_inspire',
-  BUNDLES: 'pixulinhos_bundles',
-  REVIEWS: 'pixulinhos_reviews',
-  FAQS: 'pixulinhos_faqs',
-  HOME_SECTIONS: 'pixulinhos_home_sections',
-  MEDIA: 'pixulinhos_media',
-  SETTINGS: 'pixulinhos_settings',
-  ORDERS: 'pixulinhos_orders'
+  PRODUCTS: 'pixulinhos_products', CATEGORIES: 'pixulinhos_categories', BANNERS: 'pixulinhos_banners',
+  INSPIRE: 'pixulinhos_inspire', BUNDLES: 'pixulinhos_bundles', REVIEWS: 'pixulinhos_reviews',
+  FAQS: 'pixulinhos_faqs', HOME_SECTIONS: 'pixulinhos_home_sections', MEDIA: 'pixulinhos_media',
+  SETTINGS: 'pixulinhos_settings', ORDERS: 'pixulinhos_orders'
 };
 
-export const notifyCMSUpdate = () => {
-  window.dispatchEvent(new Event('pixulinhos_cms_update'));
-};
+export const notifyCMSUpdate = () => window.dispatchEvent(new Event('pixulinhos_cms_update'));
 
 function getLocal<T>(key: string, fallback: T): T {
   try {
     let raw = localStorage.getItem(key);
     if (!raw) return fallback;
-
-    // Sanitize any legacy 'Egípcio' text
-    if (raw.includes('Egípcio') || raw.includes('egípcio') || raw.includes('Egipcio') || raw.includes('egipcio')) {
-      raw = raw
-        .replaceAll('Algodão Egípcio', '100% Algodão')
-        .replaceAll('algodão egípcio', '100% algodão')
-        .replaceAll('Algodão Egipcio', '100% Algodão')
-        .replaceAll('algodão egipcio', '100% algodão')
-        .replaceAll('Egípcio', '100% Algodão')
-        .replaceAll('egípcio', '100% algodão');
+    if (/Eg[ií]pcio|eg[ií]pcio/i.test(raw)) {
+      raw = raw.replaceAll('Algodão Egípcio', '100% Algodão').replaceAll('algodão egípcio', '100% algodão')
+        .replaceAll('Algodão Egipcio', '100% Algodão').replaceAll('algodão egipcio', '100% algodão')
+        .replaceAll('Egípcio', '100% Algodão').replaceAll('egípcio', '100% algodão');
       localStorage.setItem(key, raw);
     }
-
     return JSON.parse(raw);
-  } catch (e) {
-    console.warn(`Error reading ${key} from localStorage`, e);
-    return fallback;
-  }
+  } catch { return fallback; }
 }
+function setLocal<T>(key: string, value: T) {
+  try { localStorage.setItem(key, JSON.stringify(value)); notifyCMSUpdate(); } catch (e) { console.error(e); }
+}
+function fire<T>(operation: PromiseLike<{ error: any }>, key: string, value: T, message: string) {
+  operation.then(({ error }) => {
+    if (error) { console.error(message, error.message); return; }
+    setLocal(key, value);
+  }, e => console.error(message, e));
+}
+function sb() { return getSupabase(); }
 
-function setLocal<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-    notifyCMSUpdate();
-  } catch (e) {
-    console.error(`Error writing ${key} to localStorage`, e);
-  }
-}
+const mapProduct = (p: any): Product => ({
+  id:p.id, sku:p.sku, name:p.name, slug:p.slug, price:Number(p.price), originalPrice:p.original_price == null ? undefined : Number(p.original_price),
+  discountPercentage:p.discount_percentage, installments:p.installments, stock:p.stock, weight:p.weight, dimensions:p.dimensions,
+  categoryId:p.category_id || 'cat-body', brand:p.brand, mainImage:p.main_image, images:p.images || [p.main_image], videoUrl:p.video_url,
+  sizes:p.sizes || ['RN','P','M','G'], colors:p.colors || [], description:p.description || '', shortDescription:p.short_description,
+  details:p.details || [], isNew:p.is_new, isFeatured:p.is_featured, isPromotion:p.is_promotion, isActive:p.is_active ?? true,
+  rating:Number(p.rating || 5), reviewCount:p.review_count || 1
+});
+const productRow = (p: Product) => ({
+  id:p.id, sku:p.sku, name:p.name, slug:p.slug || p.name.toLowerCase().replace(/\s+/g,'-'), price:p.price,
+  original_price:p.originalPrice, discount_percentage:p.discountPercentage || 0, installments:p.installments, stock:p.stock ?? 99,
+  weight:p.weight, dimensions:p.dimensions, category_id:p.categoryId, brand:p.brand, main_image:p.images?.[0] || p.mainImage || '',
+  images:p.images || [], sizes:p.sizes || [], colors:p.colors || [], description:p.description || '', short_description:p.shortDescription,
+  details:p.details || [], is_new:p.isNew ?? true, is_featured:p.isFeatured ?? false, is_promotion:p.isPromotion ?? false,
+  is_active:p.isActive ?? true, rating:p.rating ?? 5, review_count:p.reviewCount ?? 1
+});
 
 export const cmsStore = {
-  // --------------------------------------------------------------------------
-  // PRODUCTS CRUD
-  // --------------------------------------------------------------------------
-  getProducts: (): Product[] => {
-    const products = getLocal<Product[]>(KEYS.PRODUCTS, INITIAL_PRODUCTS);
-    let updated = false;
-
-    const existingIds = new Set(products.map((p) => p.id));
-    let merged = products.map((p) => {
-      const initP = INITIAL_PRODUCTS.find((ip) => ip.id === p.id);
-      if (initP && initP.images && initP.images.length > (p.images?.length || 0)) {
-        updated = true;
-        return {
-          ...p,
-          images: initP.images,
-          mainImage: p.mainImage || initP.images[0]
-        };
-      }
-      return p;
-    });
-
-    for (const initP of INITIAL_PRODUCTS) {
-      if (!existingIds.has(initP.id)) {
-        merged.push(initP);
-        updated = true;
-      }
-    }
-
-    if (updated) {
-      setLocal(KEYS.PRODUCTS, merged);
-    }
-
-    return merged;
+  getProducts: (): Product[] => getLocal(KEYS.PRODUCTS, INITIAL_PRODUCTS),
+  saveProducts: (v: Product[]) => setLocal(KEYS.PRODUCTS, v),
+  addProduct: (p: Product): void => {
+    const n={...p,createdAt:new Date().toISOString()}; const s=sb();
+    if (!s) return setLocal(KEYS.PRODUCTS,[n,...cmsStore.getProducts()]);
+    fire(s.from('products').upsert(productRow(n)),KEYS.PRODUCTS,[n,...cmsStore.getProducts()],'Supabase product insert error');
   },
-  saveProducts: (products: Product[]): void => {
-    setLocal(KEYS.PRODUCTS, products);
-  },
-  addProduct: (product: Product): void => {
-    const list = cmsStore.getProducts();
-    const newProd = { ...product, createdAt: new Date().toISOString() };
-    cmsStore.saveProducts([newProd, ...list]);
-    
-    // Async sync to Supabase
-    const supabase = getSupabase();
-    if (supabase) {
-      supabase.from('products').insert({
-        id: newProd.id,
-        sku: newProd.sku,
-        name: newProd.name,
-        slug: newProd.slug || newProd.name.toLowerCase().replace(/\s+/g, '-'),
-        price: newProd.price,
-        original_price: newProd.originalPrice,
-        discount_percentage: newProd.discountPercentage || 0,
-        installments: newProd.installments,
-        stock: newProd.stock ?? 99,
-        weight: newProd.weight,
-        dimensions: newProd.dimensions,
-        category_id: newProd.categoryId,
-        brand: newProd.brand,
-        main_image: newProd.images[0] || '',
-        images: newProd.images,
-        sizes: newProd.sizes,
-        colors: newProd.colors,
-        description: newProd.description,
-        short_description: newProd.shortDescription,
-        details: newProd.details,
-        is_new: newProd.isNew ?? true,
-        is_featured: newProd.isFeatured ?? false,
-        is_promotion: newProd.isPromotion ?? false,
-        is_active: newProd.isActive ?? true,
-        rating: newProd.rating ?? 5.0,
-        review_count: newProd.reviewCount ?? 1
-      }).then(({ error }) => {
-        if (error) console.warn('Supabase product insert error:', error.message);
-      });
-    }
-  },
-  updateProduct: (updated: Product): void => {
-    const list = cmsStore.getProducts().map(p => p.id === updated.id ? updated : p);
-    cmsStore.saveProducts(list);
-
-    const supabase = getSupabase();
-    if (supabase) {
-      supabase.from('products').update({
-        name: updated.name,
-        price: updated.price,
-        original_price: updated.originalPrice,
-        category_id: updated.categoryId,
-        main_image: updated.images[0] || '',
-        images: updated.images,
-        sizes: updated.sizes,
-        colors: updated.colors,
-        description: updated.description,
-        is_new: updated.isNew,
-        is_featured: updated.isFeatured,
-        is_promotion: updated.isPromotion,
-        is_active: updated.isActive ?? true
-      }).eq('id', updated.id).then(({ error }) => {
-        if (error) console.warn('Supabase product update error:', error.message);
-      });
-    }
+  updateProduct: (p: Product): void => {
+    const s=sb(), next=cmsStore.getProducts().map(x=>x.id===p.id?p:x);
+    if (!s) return setLocal(KEYS.PRODUCTS,next);
+    fire(s.from('products').update(productRow(p)).eq('id',p.id),KEYS.PRODUCTS,next,'Supabase product update error');
   },
   deleteProduct: (id: string): void => {
-    const list = cmsStore.getProducts().filter(p => p.id !== id);
-    cmsStore.saveProducts(list);
+    const next=cmsStore.getProducts().filter(x=>x.id!==id), s=sb();
+    if (!s) return setLocal(KEYS.PRODUCTS,next);
+    fire(s.from('products').delete().eq('id',id),KEYS.PRODUCTS,next,'Supabase product delete error');
+  },
+  duplicateProduct: (id: string): Product|null => { const p=cmsStore.getProducts().find(x=>x.id===id); if(!p)return null; const c={...p,id:'prod-'+Date.now(),sku:p.sku?`${p.sku}-COPY`:`PX-COPY-${Date.now().toString().slice(-4)}`,name:`${p.name} (Cópia)`}; cmsStore.addProduct(c); return c; },
 
-    const supabase = getSupabase();
-    if (supabase) {
-      supabase.from('products').delete().eq('id', id).then(({ error }) => {
-        if (error) console.warn('Supabase product delete error:', error.message);
-      });
-    }
-  },
-  duplicateProduct: (id: string): Product | null => {
-    const list = cmsStore.getProducts();
-    const target = list.find(p => p.id === id);
-    if (!target) return null;
+  getCategories: (): Category[] => [...getLocal(KEYS.CATEGORIES,INITIAL_CATEGORIES)].sort((a,b)=>a.order-b.order),
+  saveCategories: (v: Category[]) => setLocal(KEYS.CATEGORIES,v),
+  addCategory: (c: Category): void => { const n={...c,isActive:c.isActive??true},next=[...cmsStore.getCategories(),n],s=sb(); if(!s)return setLocal(KEYS.CATEGORIES,next); fire(s.from('categories').upsert({id:n.id,name:n.name,slug:n.slug,description:n.description,icon:n.icon,order_index:n.order,is_active:n.isActive}),KEYS.CATEGORIES,next,'Supabase category insert error'); },
+  updateCategory: (c: Category): void => { const next=cmsStore.getCategories().map(x=>x.id===c.id?c:x),s=sb(); if(!s)return setLocal(KEYS.CATEGORIES,next); fire(s.from('categories').update({name:c.name,slug:c.slug,description:c.description,icon:c.icon,order_index:c.order,is_active:c.isActive??true}).eq('id',c.id),KEYS.CATEGORIES,next,'Supabase category update error'); },
+  deleteCategory: (id: string): void => { const next=cmsStore.getCategories().filter(x=>x.id!==id),s=sb(); if(!s)return setLocal(KEYS.CATEGORIES,next); fire(s.from('categories').delete().eq('id',id),KEYS.CATEGORIES,next,'Supabase category delete error'); },
 
-    const copy: Product = {
-      ...target,
-      id: 'prod-' + Date.now(),
-      sku: target.sku ? `${target.sku}-COPY` : `PX-COPY-${Date.now().toString().slice(-4)}`,
-      name: `${target.name} (Cópia)`
-    };
-    cmsStore.addProduct(copy);
-    return copy;
-  },
+  getBanners: (): Banner[] => getLocal(KEYS.BANNERS,INITIAL_BANNERS),
+  saveBanners: (v: Banner[]) => { const s=sb(); if(!s)return setLocal(KEYS.BANNERS,v); fire(s.from('banners').upsert(v.map((b:any)=>({id:b.id,title:b.title,subtitle:b.subtitle,button_text:b.buttonText,button_link:b.buttonLink,image:b.image,mobile_image:b.mobileImage,badge_text:b.badgeText,category_slug:b.categorySlug,priority:b.priority??1,active:b.active??true})),{onConflict:'id'}),KEYS.BANNERS,v,'Supabase banners save error'); },
+  addBanner: (b: Banner): void => cmsStore.saveBanners([b,...cmsStore.getBanners()]),
+  updateBanner: (b: Banner): void => cmsStore.saveBanners(cmsStore.getBanners().map(x=>x.id===b.id?b:x)),
+  deleteBanner: (id: string): void => { const next=cmsStore.getBanners().filter(x=>x.id!==id),s=sb(); if(!s)return setLocal(KEYS.BANNERS,next); fire(s.from('banners').delete().eq('id',id),KEYS.BANNERS,next,'Supabase banner delete error'); },
 
-  // --------------------------------------------------------------------------
-  // CATEGORIES CRUD
-  // --------------------------------------------------------------------------
-  getCategories: (): Category[] => {
-    const cats = getLocal<Category[]>(KEYS.CATEGORIES, INITIAL_CATEGORIES);
-    return [...cats].sort((a, b) => a.order - b.order);
-  },
-  saveCategories: (categories: Category[]): void => {
-    setLocal(KEYS.CATEGORIES, categories);
-  },
-  addCategory: (category: Category): void => {
-    const list = cmsStore.getCategories();
-    const newCat = { ...category, isActive: category.isActive ?? true };
-    cmsStore.saveCategories([...list, newCat]);
+  getInspirePosts: (): InspirePost[] => getLocal(KEYS.INSPIRE,INITIAL_INSPIRE_POSTS),
+  saveInspirePosts: (v: InspirePost[]) => { const s=sb(); if(!s)return setLocal(KEYS.INSPIRE,v); fire(s.from('inspire_posts').upsert(v.map((p:any)=>({id:p.id,baby_name:p.babyName,age:p.age,city:p.city,image:p.image,product_name:p.productName,product_id:p.productId,caption:p.caption,likes:p.likes??0,date:p.date,is_active:p.isActive??true})),{onConflict:'id'}),KEYS.INSPIRE,v,'Supabase inspire save error'); },
+  addInspirePost: (p: InspirePost) => cmsStore.saveInspirePosts([p,...cmsStore.getInspirePosts()]),
+  updateInspirePost: (p: InspirePost) => cmsStore.saveInspirePosts(cmsStore.getInspirePosts().map(x=>x.id===p.id?p:x)),
+  deleteInspirePost: (id:string) => { const next=cmsStore.getInspirePosts().filter(x=>x.id!==id),s=sb(); if(!s)return setLocal(KEYS.INSPIRE,next); fire(s.from('inspire_posts').delete().eq('id',id),KEYS.INSPIRE,next,'Supabase inspire delete error'); },
 
-    const supabase = getSupabase();
-    if (supabase) {
-      supabase.from('categories').insert({
-        id: newCat.id,
-        name: newCat.name,
-        slug: newCat.slug,
-        description: newCat.description,
-        icon: newCat.icon,
-        order_index: newCat.order,
-        is_active: newCat.isActive
-      }).then(({ error }) => {
-        if (error) console.warn('Supabase category insert error:', error.message);
-      });
-    }
-  },
-  updateCategory: (updated: Category): void => {
-    const list = cmsStore.getCategories().map(c => c.id === updated.id ? updated : c);
-    cmsStore.saveCategories(list);
+  getLookBundles: (): LookBundle[] => getLocal(KEYS.BUNDLES,INITIAL_LOOK_BUNDLES),
+  saveLookBundles: (v: LookBundle[]) => { const s=sb(); if(!s)return setLocal(KEYS.BUNDLES,v); fire(s.from('look_bundles').upsert(v.map((b:any)=>({id:b.id,title:b.title,theme:b.theme,cover_image:b.coverImage,price:b.price,original_price:b.originalPrice,savings_text:b.savingsText,description:b.description,items:b.items||[],related_product_ids:b.relatedProductIds||[],order_index:b.order??0,is_active:b.isActive??true})),{onConflict:'id'}),KEYS.BUNDLES,v,'Supabase bundles save error'); },
+  addLookBundle:(b:LookBundle)=>cmsStore.saveLookBundles([b,...cmsStore.getLookBundles()]),
+  updateLookBundle:(b:LookBundle)=>cmsStore.saveLookBundles(cmsStore.getLookBundles().map(x=>x.id===b.id?b:x)),
+  deleteLookBundle:(id:string)=>{const next=cmsStore.getLookBundles().filter(x=>x.id!==id),s=sb();if(!s)return setLocal(KEYS.BUNDLES,next);fire(s.from('look_bundles').delete().eq('id',id),KEYS.BUNDLES,next,'Supabase bundle delete error');},
 
-    const supabase = getSupabase();
-    if (supabase) {
-      supabase.from('categories').update({
-        name: updated.name,
-        slug: updated.slug,
-        description: updated.description,
-        order_index: updated.order,
-        is_active: updated.isActive ?? true
-      }).eq('id', updated.id).then(({ error }) => {
-        if (error) console.warn('Supabase category update error:', error.message);
-      });
-    }
-  },
-  deleteCategory: (id: string): void => {
-    const list = cmsStore.getCategories().filter(c => c.id !== id);
-    cmsStore.saveCategories(list);
+  getReviews: (): Review[] => getLocal(KEYS.REVIEWS,INITIAL_REVIEWS),
+  saveReviews: (v: Review[]) => { const s=sb(); if(!s)return setLocal(KEYS.REVIEWS,v); fire(s.from('reviews').upsert(v.map((r:any)=>({id:r.id,author_name:r.authorName,baby_info:r.babyInfo,rating:r.rating,comment:r.comment,photo:r.photo,product_name:r.productName,verified_purchase:r.verifiedPurchase??true,date:r.date,is_active:r.isActive??true})),{onConflict:'id'}),KEYS.REVIEWS,v,'Supabase reviews save error'); },
+  addReview:(r:Review)=>cmsStore.saveReviews([r,...cmsStore.getReviews()]),
+  updateReview:(r:Review)=>cmsStore.saveReviews(cmsStore.getReviews().map(x=>x.id===r.id?r:x)),
+  deleteReview:(id:string)=>{const next=cmsStore.getReviews().filter(x=>x.id!==id),s=sb();if(!s)return setLocal(KEYS.REVIEWS,next);fire(s.from('reviews').delete().eq('id',id),KEYS.REVIEWS,next,'Supabase review delete error');},
 
-    const supabase = getSupabase();
-    if (supabase) {
-      supabase.from('categories').delete().eq('id', id).then(({ error }) => {
-        if (error) console.warn('Supabase category delete error:', error.message);
-      });
-    }
-  },
+  getFaqs: (): FAQ[] => [...getLocal(KEYS.FAQS,INITIAL_FAQS)].sort((a,b)=>a.order-b.order),
+  saveFaqs: (v: FAQ[]) => { const s=sb(); if(!s)return setLocal(KEYS.FAQS,v); fire(s.from('faqs').upsert(v.map((f:any)=>({id:f.id,question:f.question,answer:f.answer,category:f.category,order_index:f.order??0,is_active:f.isActive??true})),{onConflict:'id'}),KEYS.FAQS,v,'Supabase FAQ save error'); },
+  addFaq:(f:FAQ)=>cmsStore.saveFaqs([...cmsStore.getFaqs(),f]),
+  updateFaq:(f:FAQ)=>cmsStore.saveFaqs(cmsStore.getFaqs().map(x=>x.id===f.id?f:x)),
+  deleteFaq:(id:string)=>{const next=cmsStore.getFaqs().filter(x=>x.id!==id),s=sb();if(!s)return setLocal(KEYS.FAQS,next);fire(s.from('faqs').delete().eq('id',id),KEYS.FAQS,next,'Supabase FAQ delete error');},
 
-  // --------------------------------------------------------------------------
-  // BANNERS CRUD
-  // --------------------------------------------------------------------------
-  getBanners: (): Banner[] => {
-    return getLocal<Banner[]>(KEYS.BANNERS, INITIAL_BANNERS);
-  },
-  saveBanners: (banners: Banner[]): void => {
-    setLocal(KEYS.BANNERS, banners);
-  },
-  addBanner: (banner: Banner): void => {
-    const list = cmsStore.getBanners();
-    cmsStore.saveBanners([banner, ...list]);
-  },
-  updateBanner: (updated: Banner): void => {
-    const list = cmsStore.getBanners().map(b => b.id === updated.id ? updated : b);
-    cmsStore.saveBanners(list);
-  },
-  deleteBanner: (id: string): void => {
-    const list = cmsStore.getBanners().filter(b => b.id !== id);
-    cmsStore.saveBanners(list);
-  },
+  getHomeSections: (): HomeSection[] => [...getLocal(KEYS.HOME_SECTIONS,INITIAL_HOME_SECTIONS)].sort((a,b)=>a.order-b.order),
+  saveHomeSections: (v: HomeSection[]) => { const s=sb(); if(!s)return setLocal(KEYS.HOME_SECTIONS,v); fire(s.from('home_sections').upsert(v.map((x:any)=>({id:x.id,section_key:x.sectionKey,title:x.title,subtitle:x.subtitle,order_index:x.order,is_active:x.isActive??true,config:x.config||{}})),{onConflict:'id'}),KEYS.HOME_SECTIONS,v,'Supabase home sections save error'); },
 
-  // --------------------------------------------------------------------------
-  // INSPIRE POSTS CRUD
-  // --------------------------------------------------------------------------
-  getInspirePosts: (): InspirePost[] => {
-    return getLocal<InspirePost[]>(KEYS.INSPIRE, INITIAL_INSPIRE_POSTS);
-  },
-  saveInspirePosts: (posts: InspirePost[]): void => {
-    setLocal(KEYS.INSPIRE, posts);
-  },
-  addInspirePost: (post: InspirePost): void => {
-    const list = cmsStore.getInspirePosts();
-    cmsStore.saveInspirePosts([post, ...list]);
-  },
-  updateInspirePost: (updated: InspirePost): void => {
-    const list = cmsStore.getInspirePosts().map(p => p.id === updated.id ? updated : p);
-    cmsStore.saveInspirePosts(list);
-  },
-  deleteInspirePost: (id: string): void => {
-    const list = cmsStore.getInspirePosts().filter(p => p.id !== id);
-    cmsStore.saveInspirePosts(list);
-  },
+  getMediaItems: (): MediaItem[] => getLocal(KEYS.MEDIA,INITIAL_MEDIA),
+  saveMediaItems: (v: MediaItem[]) => { const s=sb(); if(!s)return setLocal(KEYS.MEDIA,v); fire(s.from('media_library').upsert(v.map((m:any)=>({id:m.id,name:m.name,url:m.url,type:m.type||'image',size:m.size||0,folder:m.folder||'Geral'})),{onConflict:'id'}),KEYS.MEDIA,v,'Supabase media save error'); },
+  addMediaItem:(m:MediaItem)=>cmsStore.saveMediaItems([m,...cmsStore.getMediaItems()]),
+  deleteMediaItem:(id:string)=>{const next=cmsStore.getMediaItems().filter(x=>x.id!==id),s=sb();if(!s)return setLocal(KEYS.MEDIA,next);fire(s.from('media_library').delete().eq('id',id),KEYS.MEDIA,next,'Supabase media delete error');},
 
-  // --------------------------------------------------------------------------
-  // LOOK BUNDLES CRUD
-  // --------------------------------------------------------------------------
-  getLookBundles: (): LookBundle[] => {
-    return getLocal<LookBundle[]>(KEYS.BUNDLES, INITIAL_LOOK_BUNDLES);
-  },
-  saveLookBundles: (bundles: LookBundle[]): void => {
-    setLocal(KEYS.BUNDLES, bundles);
-  },
-  addLookBundle: (bundle: LookBundle): void => {
-    const list = cmsStore.getLookBundles();
-    cmsStore.saveLookBundles([bundle, ...list]);
-  },
-  updateLookBundle: (updated: LookBundle): void => {
-    const list = cmsStore.getLookBundles().map(b => b.id === updated.id ? updated : b);
-    cmsStore.saveLookBundles(list);
-  },
-  deleteLookBundle: (id: string): void => {
-    const list = cmsStore.getLookBundles().filter(b => b.id !== id);
-    cmsStore.saveLookBundles(list);
-  },
+  getSettings: (): SiteSettings => getLocal(KEYS.SETTINGS,INITIAL_SITE_SETTINGS),
+  saveSettings: (v: SiteSettings): void => { const s=sb(); if(!s)return setLocal(KEYS.SETTINGS,v); fire(s.from('site_settings').upsert({id:1,store_name:v.storeName,whatsapp_number:v.whatsappNumber,top_announcement:v.topAnnouncement,hero_title:v.heroTitle,hero_subheadline:v.heroSubheadline,hero_badge_text:v.heroBadgeText,instagram_url:v.instagramUrl,facebook_url:v.facebookUrl,store_address:v.storeAddress},{onConflict:'id'}),KEYS.SETTINGS,v,'Supabase settings save error'); },
 
-  // --------------------------------------------------------------------------
-  // REVIEWS CRUD
-  // --------------------------------------------------------------------------
-  getReviews: (): Review[] => {
-    return getLocal<Review[]>(KEYS.REVIEWS, INITIAL_REVIEWS);
-  },
-  saveReviews: (reviews: Review[]): void => {
-    setLocal(KEYS.REVIEWS, reviews);
-  },
-  addReview: (review: Review): void => {
-    const list = cmsStore.getReviews();
-    cmsStore.saveReviews([review, ...list]);
-  },
-  updateReview: (updated: Review): void => {
-    const list = cmsStore.getReviews().map(r => r.id === updated.id ? updated : r);
-    cmsStore.saveReviews(list);
-  },
-  deleteReview: (id: string): void => {
-    const list = cmsStore.getReviews().filter(r => r.id !== id);
-    cmsStore.saveReviews(list);
-  },
+  getOrders: (): Order[] => getLocal(KEYS.ORDERS,[]),
+  addOrder: (o: Order): void => { const s=sb(),next=[o,...cmsStore.getOrders()]; if(!s)return setLocal(KEYS.ORDERS,next); fire(s.from('orders').insert({id:o.id,customer_name:(o as any).customerName,customer_email:(o as any).customerEmail,customer_phone:(o as any).customerPhone,items:(o as any).items||[],total_amount:(o as any).totalAmount,status:(o as any).status||'Pendente'}),KEYS.ORDERS,next,'Supabase order save error'); },
 
-  // --------------------------------------------------------------------------
-  // FAQS CRUD
-  // --------------------------------------------------------------------------
-  getFaqs: (): FAQ[] => {
-    const list = getLocal<FAQ[]>(KEYS.FAQS, INITIAL_FAQS);
-    return [...list].sort((a, b) => a.order - b.order);
-  },
-  saveFaqs: (faqs: FAQ[]): void => {
-    setLocal(KEYS.FAQS, faqs);
-  },
-  addFaq: (faq: FAQ): void => {
-    const list = cmsStore.getFaqs();
-    cmsStore.saveFaqs([...list, faq]);
-  },
-  updateFaq: (updated: FAQ): void => {
-    const list = cmsStore.getFaqs().map(f => f.id === updated.id ? updated : f);
-    cmsStore.saveFaqs(list);
-  },
-  deleteFaq: (id: string): void => {
-    const list = cmsStore.getFaqs().filter(f => f.id !== id);
-    cmsStore.saveFaqs(list);
-  },
+  getStats: (): CMSStats => { const p=cmsStore.getProducts(),c=cmsStore.getCategories(),b=cmsStore.getBanners(),l=cmsStore.getLookBundles(),r=cmsStore.getReviews(),i=cmsStore.getInspirePosts(),f=cmsStore.getFaqs(); return {totalProducts:p.length,totalCategories:c.length,totalBanners:b.length,totalLookBundles:l.length,totalReviews:r.length,totalInspirePosts:i.length,totalFaqs:f.length,hiddenProductsCount:p.filter(x=>x.isActive===false).length,promotionProductsCount:p.filter(x=>x.isPromotion||(x.originalPrice&&x.originalPrice>x.price)).length,outOfStockProductsCount:p.filter(x=>x.stock===0).length,missingImageCount:p.filter(x=>!x.images?.length||!x.images[0]).length}; },
 
-  // --------------------------------------------------------------------------
-  // HOME SECTIONS (Home Builder)
-  // --------------------------------------------------------------------------
-  getHomeSections: (): HomeSection[] => {
-    const sections = getLocal<HomeSection[]>(KEYS.HOME_SECTIONS, INITIAL_HOME_SECTIONS);
-    return [...sections].sort((a, b) => a.order - b.order);
-  },
-  saveHomeSections: (sections: HomeSection[]): void => {
-    setLocal(KEYS.HOME_SECTIONS, sections);
-  },
-
-  // --------------------------------------------------------------------------
-  // MEDIA LIBRARY
-  // --------------------------------------------------------------------------
-  getMediaItems: (): MediaItem[] => {
-    return getLocal<MediaItem[]>(KEYS.MEDIA, INITIAL_MEDIA);
-  },
-  saveMediaItems: (items: MediaItem[]): void => {
-    setLocal(KEYS.MEDIA, items);
-  },
-  addMediaItem: (item: MediaItem): void => {
-    const list = cmsStore.getMediaItems();
-    cmsStore.saveMediaItems([item, ...list]);
-  },
-  deleteMediaItem: (id: string): void => {
-    const list = cmsStore.getMediaItems().filter(m => m.id !== id);
-    cmsStore.saveMediaItems(list);
-  },
-
-  // --------------------------------------------------------------------------
-  // SITE SETTINGS
-  // --------------------------------------------------------------------------
-  getSettings: (): SiteSettings => {
-    return getLocal<SiteSettings>(KEYS.SETTINGS, INITIAL_SITE_SETTINGS);
-  },
-  saveSettings: (settings: SiteSettings): void => {
-    setLocal(KEYS.SETTINGS, settings);
-
-    const supabase = getSupabase();
-    if (supabase) {
-      supabase.from('site_settings').upsert({
-        id: 1,
-        store_name: settings.storeName,
-        whatsapp_number: settings.whatsappNumber,
-        top_announcement: settings.topAnnouncement,
-        hero_title: settings.heroTitle,
-        hero_subheadline: settings.heroSubheadline,
-        hero_badge_text: settings.heroBadgeText,
-        instagram_url: settings.instagramUrl,
-        facebook_url: settings.facebookUrl,
-        store_address: settings.storeAddress
-      }).then(({ error }) => {
-        if (error) console.warn('Supabase settings update error:', error.message);
-      });
-    }
-  },
-
-  // --------------------------------------------------------------------------
-  // ORDERS (Future Module 20 Placeholder)
-  // --------------------------------------------------------------------------
-  getOrders: (): Order[] => {
-    return getLocal<Order[]>(KEYS.ORDERS, []);
-  },
-  addOrder: (order: Order): void => {
-    const list = cmsStore.getOrders();
-    setLocal(KEYS.ORDERS, [order, ...list]);
-  },
-
-  // --------------------------------------------------------------------------
-  // CALCULATE CMS STATS FOR DASHBOARD OVERVIEW
-  // --------------------------------------------------------------------------
-  getStats: (): CMSStats => {
-    const products = cmsStore.getProducts();
-    const categories = cmsStore.getCategories();
-    const banners = cmsStore.getBanners();
-    const lookBundles = cmsStore.getLookBundles();
-    const reviews = cmsStore.getReviews();
-    const inspirePosts = cmsStore.getInspirePosts();
-    const faqs = cmsStore.getFaqs();
-
-    return {
-      totalProducts: products.length,
-      totalCategories: categories.length,
-      totalBanners: banners.length,
-      totalLookBundles: lookBundles.length,
-      totalReviews: reviews.length,
-      totalInspirePosts: inspirePosts.length,
-      totalFaqs: faqs.length,
-      hiddenProductsCount: products.filter(p => p.isActive === false).length,
-      promotionProductsCount: products.filter(p => p.isPromotion || (p.originalPrice && p.originalPrice > p.price)).length,
-      outOfStockProductsCount: products.filter(p => p.stock === 0).length,
-      missingImageCount: products.filter(p => !p.images || p.images.length === 0 || !p.images[0]).length,
-    };
-  },
-
-  // --------------------------------------------------------------------------
-  // ASYNC SYNC FROM SUPABASE DATABASE (IF AVAILABLE)
-  // --------------------------------------------------------------------------
   syncFromSupabase: async (): Promise<boolean> => {
-    const supabase = getSupabase();
-    if (!supabase) return false;
-
+    const s=sb(); if(!s)return false;
     try {
-      // Fetch Products
-      const { data: prods, error: pErr } = await supabase.from('products').select('*');
-      if (!pErr && prods && prods.length > 0) {
-        const mappedProducts: Product[] = prods.map((p: any) => ({
-          id: p.id,
-          sku: p.sku,
-          name: p.name,
-          slug: p.slug,
-          price: Number(p.price),
-          originalPrice: p.original_price ? Number(p.original_price) : undefined,
-          discountPercentage: p.discount_percentage,
-          installments: p.installments,
-          stock: p.stock,
-          weight: p.weight,
-          dimensions: p.dimensions,
-          categoryId: p.category_id || 'cat-body',
-          brand: p.brand,
-          mainImage: p.main_image,
-          images: p.images || [p.main_image],
-          videoUrl: p.video_url,
-          sizes: p.sizes || ['RN', 'P', 'M', 'G'],
-          colors: p.colors || [],
-          description: p.description || '',
-          shortDescription: p.short_description,
-          details: p.details || [],
-          isNew: p.is_new,
-          isFeatured: p.is_featured,
-          isPromotion: p.is_promotion,
-          isActive: p.is_active ?? true,
-          rating: Number(p.rating || 5.0),
-          reviewCount: p.review_count || 1
-        }));
-        cmsStore.saveProducts(mappedProducts);
-      }
-
-      // Fetch Categories
-      const { data: cats, error: cErr } = await supabase.from('categories').select('*').order('order_index');
-      if (!cErr && cats && cats.length > 0) {
-        const mappedCats: Category[] = cats.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          slug: c.slug,
-          description: c.description,
-          icon: c.icon,
-          order: c.order_index,
-          isActive: c.is_active ?? true
-        }));
-        cmsStore.saveCategories(mappedCats);
-      }
-
-      // Fetch Banners
-      const { data: bans, error: bErr } = await supabase.from('banners').select('*');
-      if (!bErr && bans && bans.length > 0) {
-        const mappedBanners: Banner[] = bans.map((b: any) => ({
-          id: b.id,
-          title: b.title,
-          subtitle: b.subtitle,
-          buttonText: b.button_text,
-          buttonLink: b.button_link,
-          image: b.image,
-          mobileImage: b.mobile_image,
-          badgeText: b.badge_text,
-          categorySlug: b.category_slug,
-          priority: b.priority,
-          active: b.active ?? true
-        }));
-        cmsStore.saveBanners(mappedBanners);
-      }
-
-      notifyCMSUpdate();
-      return true;
-    } catch (e) {
-      console.warn('Failed to sync from Supabase:', e);
-      return false;
-    }
+      const [p,c,b,i,l,r,f,h,m,set] = await Promise.all([
+        s.from('products').select('*'),s.from('categories').select('*').order('order_index'),s.from('banners').select('*'),
+        s.from('inspire_posts').select('*'),s.from('look_bundles').select('*').order('order_index'),s.from('reviews').select('*'),
+        s.from('faqs').select('*').order('order_index'),s.from('home_sections').select('*').order('order_index'),s.from('media_library').select('*'),s.from('site_settings').select('*').eq('id',1).maybeSingle()
+      ]);
+      if(!p.error&&p.data)setLocal(KEYS.PRODUCTS,p.data.map(mapProduct));
+      if(!c.error&&c.data)setLocal(KEYS.CATEGORIES,c.data.map((x:any)=>({id:x.id,name:x.name,slug:x.slug,description:x.description,image:x.image,icon:x.icon,order:x.order_index,isActive:x.is_active})));
+      if(!b.error&&b.data)setLocal(KEYS.BANNERS,b.data.map((x:any)=>({id:x.id,title:x.title,subtitle:x.subtitle,buttonText:x.button_text,buttonLink:x.button_link,image:x.image,mobileImage:x.mobile_image,badgeText:x.badge_text,categorySlug:x.category_slug,priority:x.priority,active:x.active})));
+      if(!i.error&&i.data)setLocal(KEYS.INSPIRE,i.data.map((x:any)=>({id:x.id,babyName:x.baby_name,age:x.age,city:x.city,image:x.image,productName:x.product_name,productId:x.product_id,caption:x.caption,likes:x.likes,date:x.date,isActive:x.is_active})));
+      if(!l.error&&l.data)setLocal(KEYS.BUNDLES,l.data.map((x:any)=>({id:x.id,title:x.title,theme:x.theme,coverImage:x.cover_image,price:Number(x.price),originalPrice:x.original_price==null?undefined:Number(x.original_price),savingsText:x.savings_text,description:x.description,items:x.items||[],relatedProductIds:x.related_product_ids||[],order:x.order_index,isActive:x.is_active})));
+      if(!r.error&&r.data)setLocal(KEYS.REVIEWS,r.data.map((x:any)=>({id:x.id,authorName:x.author_name,babyInfo:x.baby_info,rating:x.rating,comment:x.comment,photo:x.photo,productName:x.product_name,verifiedPurchase:x.verified_purchase,date:x.date,isActive:x.is_active})));
+      if(!f.error&&f.data)setLocal(KEYS.FAQS,f.data.map((x:any)=>({id:x.id,question:x.question,answer:x.answer,category:x.category,order:x.order_index,isActive:x.is_active})));
+      if(!h.error&&h.data)setLocal(KEYS.HOME_SECTIONS,h.data.map((x:any)=>({id:x.id,sectionKey:x.section_key,title:x.title,subtitle:x.subtitle,order:x.order_index,isActive:x.is_active,config:x.config||{}})));
+      if(!m.error&&m.data)setLocal(KEYS.MEDIA,m.data);
+      if(!set.error&&set.data){const x:any=set.data;setLocal(KEYS.SETTINGS,{...INITIAL_SITE_SETTINGS,storeName:x.store_name,whatsappNumber:x.whatsapp_number,topAnnouncement:x.top_announcement,heroTitle:x.hero_title,heroSubheadline:x.hero_subheadline,heroBadgeText:x.hero_badge_text,instagramUrl:x.instagram_url,facebookUrl:x.facebook_url,storeAddress:x.store_address});}
+      notifyCMSUpdate(); return true;
+    } catch(e){console.error('Failed to sync from Supabase:',e);return false;}
   },
 
-  // --------------------------------------------------------------------------
-  // RESET DEMO DATA
-  // --------------------------------------------------------------------------
-  resetAll: (): void => {
-    localStorage.removeItem(KEYS.PRODUCTS);
-    localStorage.removeItem(KEYS.CATEGORIES);
-    localStorage.removeItem(KEYS.BANNERS);
-    localStorage.removeItem(KEYS.INSPIRE);
-    localStorage.removeItem(KEYS.BUNDLES);
-    localStorage.removeItem(KEYS.REVIEWS);
-    localStorage.removeItem(KEYS.FAQS);
-    localStorage.removeItem(KEYS.HOME_SECTIONS);
-    localStorage.removeItem(KEYS.MEDIA);
-    localStorage.removeItem(KEYS.SETTINGS);
-    localStorage.removeItem(KEYS.ORDERS);
-    notifyCMSUpdate();
-  }
+  resetAll: (): void => { Object.values(KEYS).forEach(k=>localStorage.removeItem(k)); notifyCMSUpdate(); }
 };
+
+// Hydrate the browser cache from Supabase when the app starts. Supabase remains the source of truth.
+if (typeof window !== 'undefined') void cmsStore.syncFromSupabase();
