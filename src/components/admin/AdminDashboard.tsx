@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
   X, RefreshCw, Check, Lock, LayoutDashboard, Package, Layers, Image,
-  Heart, Sparkles, Star, HelpCircle, Layout, FolderOpen, Search, Settings, ShieldCheck, Database
+  Heart, Sparkles, Star, HelpCircle, Layout, FolderOpen, Search, Settings
 } from 'lucide-react';
 import { Category, Product, Banner, InspirePost, LookBundle, Review, FAQ, HomeSection, SiteSettings, MediaItem } from '../../types';
 import { cmsStore } from '../../services/cmsStore';
-import { isSupabaseConfigured, supabase } from '../../lib/supabase';
+import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
 
 // Sub-tabs
 import { DashboardOverviewTab } from './tabs/DashboardOverviewTab';
@@ -40,6 +40,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const supabase = getSupabase();
 
   type TabType = 'dashboard' | 'products' | 'categories' | 'banners' | 'inspire' | 'bundles' | 'reviews' | 'faqs' | 'home_builder' | 'media' | 'seo' | 'settings';
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -65,7 +66,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (mounted) setIsAuthenticated(!!session);
     });
     return () => { mounted = false; listener.subscription.unsubscribe(); };
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     const handleUpdate = () => {
