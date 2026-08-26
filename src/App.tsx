@@ -19,9 +19,12 @@ import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 
 import { Product, Category, Banner, InspirePost, LookBundle, Review, FAQ, SiteSettings, HomeSection } from './types';
 import { cmsStore } from './services/cmsStore';
+import { installSupabaseCmsPersistence } from './services/supabaseCmsPersistence';
+
+// Install the persistence bridge without changing the existing CMS UI/state model.
+installSupabaseCmsPersistence();
 
 export default function App() {
-  // Synchronized state from cmsStore
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -32,11 +35,9 @@ export default function App() {
   const [settings, setSettings] = useState<SiteSettings>(cmsStore.getSettings());
   const [homeSections, setHomeSections] = useState<HomeSection[]>([]);
 
-  // Active user selections
   const [activeCategorySlug, setActiveCategorySlug] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // Wishlist state
   const [wishlistIds, setWishlistIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('pixulinhos_wishlist');
@@ -49,7 +50,6 @@ export default function App() {
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
 
-  // Load store data
   const loadStoreData = () => {
     setProducts(cmsStore.getProducts());
     setCategories(cmsStore.getCategories());
@@ -64,8 +64,6 @@ export default function App() {
 
   useEffect(() => {
     loadStoreData();
-
-    // Try background sync with Supabase if configured
     cmsStore.syncFromSupabase();
 
     const handleUpdate = () => {
@@ -76,7 +74,6 @@ export default function App() {
     return () => window.removeEventListener('pixulinhos_cms_update', handleUpdate);
   }, []);
 
-  // Save wishlist
   useEffect(() => {
     try {
       localStorage.setItem('pixulinhos_wishlist', JSON.stringify(wishlistIds));
@@ -109,8 +106,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFDF9] text-[#231F40] font-sans selection:bg-pink-200 selection:text-[#FF3B7A]">
-      
-      {/* Sticky Header */}
       <Header
         settings={settings}
         categories={categories}
@@ -125,24 +120,20 @@ export default function App() {
       />
 
       <main className="flex-1 space-y-12 sm:space-y-16 lg:space-y-20 pb-12">
-        {/* 1. Hero Principal */}
         <HeroSection
           settings={settings}
           onExploreClick={() => handleSelectCategory(null)}
           onSelectCategory={handleSelectCategory}
         />
 
-        {/* 2. Banner "Feito para momentos inesquecíveis" (100% Algodão, Antialérgico, Conforto Premium) */}
         <FeatureTrustBanner />
 
-        {/* 3. Banner "Os favoritos das mamães" (Mais vendidos, Lançamentos, Promoções) */}
         <FavoritesBannerSection
           products={products}
           onSelectCategory={handleSelectCategory}
           onSelectProduct={(p) => setSelectedProduct(p)}
         />
 
-        {/* 4. Carrossel de Banners promocionais gerenciado via CMS */}
         {banners.length > 0 && (
           <BannerCarousel
             banners={banners}
@@ -150,7 +141,6 @@ export default function App() {
           />
         )}
 
-        {/* 5. Catálogo Inteligente por Categorias (Estilo Netflix) */}
         <NetflixCatalog
           categories={categories}
           products={products}
@@ -162,7 +152,6 @@ export default function App() {
           whatsappNumber={settings.whatsappNumber}
         />
 
-        {/* 6. Looks Completos & Kits ("Monte o enxoval perfeito") */}
         {lookBundles.length > 0 && (
           <LooksCompletosSection
             bundles={lookBundles}
@@ -170,7 +159,6 @@ export default function App() {
           />
         )}
 
-        {/* 7. Galeria Inspire-se de Nossos Bebês */}
         {inspirePosts.length > 0 && (
           <InspireSection
             posts={inspirePosts}
@@ -178,35 +166,25 @@ export default function App() {
           />
         )}
 
-        {/* 8. Avaliações "Muitas mamães felizes" */}
         {reviews.length > 0 && (
-          <ReviewsSection
-            reviews={reviews}
-          />
+          <ReviewsSection reviews={reviews} />
         )}
 
-        {/* 9. FAQ / Dúvidas Frequentes */}
         <FAQSection
           faqs={faqs}
           whatsappNumber={settings.whatsappNumber}
         />
 
-        {/* 10. Selos de Confiança & Formas de Pagamento */}
         <PaymentTrustSection />
 
-        {/* 11. Chamada Final Emocional */}
-        <FinalCTASection
-          settings={settings}
-        />
+        <FinalCTASection settings={settings} />
       </main>
 
-      {/* Footer */}
       <Footer
         settings={settings}
         onSelectCategory={handleSelectCategory}
       />
 
-      {/* Product Details Modal */}
       {selectedProduct && (
         <ProductModal
           product={selectedProduct}
@@ -219,7 +197,6 @@ export default function App() {
         />
       )}
 
-      {/* Wishlist Drawer */}
       <WishlistDrawer
         isOpen={isWishlistOpen}
         onClose={() => setIsWishlistOpen(false)}
@@ -229,7 +206,6 @@ export default function App() {
         whatsappNumber={settings.whatsappNumber}
       />
 
-      {/* Admin CMS Dashboard Modal */}
       {isAdminOpen && (
         <AdminDashboard
           onClose={() => setIsAdminOpen(false)}
@@ -243,7 +219,6 @@ export default function App() {
         />
       )}
 
-      {/* Floating WhatsApp Button */}
       <FloatingWhatsApp whatsappNumber={settings.whatsappNumber} />
     </div>
   );
