@@ -1,4 +1,4 @@
-# Pixulinhos 🧸
+# Pixulinhos 🧸   https://pixulinhos.vercel.app/
 
 E-commerce infantil moderno, desenvolvido com **React + TypeScript + Vite**, com arquitetura preparada para operação real e gerenciamento de conteúdo por painel administrativo.
 
