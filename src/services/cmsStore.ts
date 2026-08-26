@@ -38,7 +38,7 @@ function fire<T>(operation: PromiseLike<{ error: any }>, key: string, value: T, 
   operation.then(({ error }) => {
     if (error) { console.error(message, error.message); return; }
     setLocal(key, value);
-  }), e => console.error(message, e));
+  }, e => console.error(message, e));
 }
 function sb() { return getSupabase(); }
 
